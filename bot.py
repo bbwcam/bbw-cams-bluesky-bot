@@ -11,10 +11,10 @@ API_URL = "https://chaturbate.com/affiliates/api/onlinerooms/?format=json&wm=T2C
 MAX_POSTS_PER_RUN = 4
 
 def create_facets(text, watch_link, hashtags):
-    """Manual facets for clickable link + hashtags (official ATProto way)"""
+    """Create official facets for clickable link + hashtags"""
     facets = []
-
-    # Link facet: "Watch free"
+    
+    # Link facet ("Watch free")
     link_text = "Watch free"
     link_start_char = text.find(link_text)
     if link_start_char != -1:
@@ -24,7 +24,7 @@ def create_facets(text, watch_link, hashtags):
         feature = models.AppBskyRichtextFacet.Link(uri=watch_link)
         facet = models.AppBskyRichtextFacet.Main(index=index, features=[feature])
         facets.append(facet)
-
+    
     # Hashtag facets
     for tag in hashtags:
         full_tag = f"#{tag}"
@@ -36,13 +36,11 @@ def create_facets(text, watch_link, hashtags):
             feature = models.AppBskyRichtextFacet.Tag(tag=tag)
             facet = models.AppBskyRichtextFacet.Main(index=index, features=[feature])
             facets.append(facet)
-
+    
     return facets
 
 def main():
-    print(f"Using handle: {BLUESKY_HANDLE}")
-    print(f"Password length: {len(BLUESKY_PASS) if BLUESKY_PASS else 'None'} chars")
-    print(f"[{datetime.now()}] 🚀 Starting BBW bot run...")
+    print(f"[{datetime.now()}] 🚀 Starting bot run...")
 
     try:
         client = Client()
@@ -59,19 +57,23 @@ def main():
         print(f"❌ API fetch failed: {e}")
         return
 
-    # Strict filter: female + public + has "bbw" tag
-    filtered = []
-    for room in data:
+    # Filter: female + public + has "bbw" tag (case-insensitive)
+    filtered = [
+        room for room in data
         if (
-            room.get('gender') == 'f'
-            and room.get('current_show') == 'public'
-            and 'bbw' in [t.lower() for t in room.get('tags', [])]
-        ):
-            filtered.append(room)
+            room.get('gender') == 'f' and
+            room.get('current_show') == 'public' and
+            "bbw" in [t.lower() for t in room.get('tags', [])]
+        )
+    ]
+    print(f"✅ {len(filtered)} female public BBW rooms available")
 
-    print(f"✅ Found {len(filtered)} BBW female public rooms")
+    if not filtered:
+        print("No BBW rooms found in this run → skipping posts")
+        print(f"[{datetime.now()}] Run complete — 0 posts sent\n")
+        return
 
-    # Sort by viewers descending
+    # Sort by current viewers (most popular first)
     filtered.sort(key=lambda x: int(x.get('num_users', 0)), reverse=True)
 
     posted = 0
@@ -83,17 +85,12 @@ def main():
             subject = (room.get('room_subject', '')[:80] + '...') if len(room.get('room_subject', '')) > 80 else room.get('room_subject', '')
 
             watch_link = room['chat_room_url_revshare']
+            hashtags = ["Chaturbate", "BBW", "Curvy", "LiveCams", "Adult", "nsfw", "realnsfw", "bskynsfw", "nsfwsky"]
 
-            # Niche-tuned hashtags
-            hashtags = ["BBW", "Curvy", "Chubby", "Thick", "LiveCams", "nsfw", "realnsfw"]
-
-            text = (
-                f"🔥 BBW LIVE NOW ({room['num_users']} watching)\n\n"
-                f"{room['username']} • {room['age']} • {room['country'] or '??'}\n"
-                f"{subject}\n\n"
-                f"👉 Watch free\n\n"
-                f"{' '.join([f'#{tag}' for tag in hashtags])}"
-            )
+            text = f"🔥 LIVE NOW BBW ({room['num_users']} watching)\n\n" \
+                   f"{room['username']} • {room['age']} • {room['country'] or '??'}\n" \
+                   f"{subject}\n\n👉 Watch free\n\n" \
+                   f"{' '.join([f'#{tag}' for tag in hashtags])}"
 
             facets = create_facets(text, watch_link, hashtags)
 
@@ -104,14 +101,14 @@ def main():
                 facets=facets
             )
 
-            print(f"✅ Posted #{i+1}: {room['username']} ({room['num_users']} viewers)")
+            print(f"✅ Posted #{i+1}: {room['username']} ({room['num_users']} viewers) — LINK + HASHTAGS CLICKABLE")
             posted += 1
             time.sleep(12)
 
         except Exception as e:
-            print(f"⚠️ Failed to post {room.get('username')}: {e}")
+            print(f"⚠️  Failed to post {room.get('username')}: {e}")
 
-    print(f"[{datetime.now()}] ✅ BBW run complete — {posted} posts sent\n")
+    print(f"[{datetime.now()}] ✅ Run complete — {posted} posts sent\n")
 
 if __name__ == "__main__":
     main()
