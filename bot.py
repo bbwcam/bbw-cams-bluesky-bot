@@ -41,7 +41,7 @@ def create_facets(text, watch_link, hashtags):
 
 def main():
     print(f"Using handle: {BLUESKY_HANDLE}")
-print(f"Password length: {len(BLUESKY_PASS) if BLUESKY_PASS else 'None'} chars")
+    print(f"Password length: {len(BLUESKY_PASS) if BLUESKY_PASS else 'None'} chars")
     print(f"[{datetime.now()}] 🚀 Starting BBW bot run...")
 
     try:
