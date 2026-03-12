@@ -187,21 +187,32 @@ def build_post(room):
 
 def post_thread(client, rooms):
 
+    root = None
     parent = None
 
     for room in rooms:
 
         builder = build_post(room)
-
         img = requests.get(room["image_url_360x270"]).content
+
+        reply = None
+
+        if parent is not None:
+            reply = {
+                "root": {"uri": root.uri, "cid": root.cid},
+                "parent": {"uri": parent.uri, "cid": parent.cid},
+            }
 
         post = client.send_image(
             text=builder.build_text(),
             facets=builder.build_facets(),
             image=img,
             image_alt=f"{room['username']} live cam",
-            reply_to=parent
+            reply_to=reply
         )
+
+        if root is None:
+            root = post
 
         parent = post
 
