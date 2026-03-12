@@ -5,7 +5,7 @@ import random
 import logging
 import requests
 from datetime import datetime, timedelta
-from atproto import Client
+from atproto import Client, client_utils
 
 API_URL = "https://chaturbate.com/affiliates/api/onlinerooms/?format=json&wm=T2CSW"
 
@@ -87,21 +87,28 @@ def filter_niche(rooms, niche):
 # BUILD POST (fixed: added actual room link)
 # ======================
 
-def build_text(room):
+def build_rich_text(room):
     subject = room.get("room_subject", "")
     if len(subject) > 80:
         subject = subject[:80] + "..."
 
-    text = f"""🔥 LIVE NOW ({room['num_users']} watching)
+    url = f"https://chaturbate.com/{room['username']}/"
 
-{room['username']} • {room['age']} • {room['country']}
+    builder = client_utils.TextBuilder()
 
-{subject}
+    builder.text(f"🔥 LIVE NOW ({room['num_users']} watching)\n\n")
+    builder.text(f"{room['username']} • {room['age']} • {room['country']}\n\n")
+    builder.text(f"{subject}\n\n")
+    builder.text("👉 Watch free: ")
+    builder.link(url, url)                    # makes the URL clickable
+    builder.text("\n\n")
 
-👉 Watch free: https://chaturbate.com/{room['username']}/
+    for i, h in enumerate(HASHTAGS):
+        if i > 0:
+            builder.text(" ")
+        builder.tag(h, h)                     # makes #Hashtag clickable
 
-{' '.join('#' + h for h in HASHTAGS)}"""
-    return text.strip()
+    return builder
 
 # ======================
 # POST
@@ -109,10 +116,10 @@ def build_text(room):
 
 def post_room(client, room):
     img = requests.get(room["image_url_360x270"]).content
-    text = build_text(room)
+    text_builder = build_rich_text(room)
 
     client.send_image(
-        text=text,
+        text=text_builder,                    # now rich text with facets
         image=img,
         image_alt=f"{room['username']} live cam"
     )
