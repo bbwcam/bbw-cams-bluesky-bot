@@ -149,17 +149,16 @@ def build_rich_text(room):
 def post_room(client, room):
 
     img = requests.get(room["image_url_360x270"]).content
-
     text_builder = build_rich_text(room)
 
     client.send_image(
-        text=text_builder,
+        text=text_builder.build_text(),
+        facets=text_builder.build_facets(),
         image=img,
         image_alt=f"{room['username']} live cam"
     )
 
     save_post(room["username"])
-
     logging.info(f"Posted {room['username']} ({room['num_users']} viewers)")
 
 # ======================
@@ -186,15 +185,11 @@ def run_bot():
 
             room = random.choice(filtered[:MAX_VIEWERS_CACHE])
 
-            post_room(client, room)
-
-        else:
-
-            logging.info("No rooms found")
-
-    except Exception as e:
-
-        logging.warning(f"Error: {e}")
+try:
+    post_room(client, room)
+    logging.info("POST SUCCESS")
+except Exception as e:
+    logging.error(f"POST FAILED: {e}")
 
 # ======================
 # MAIN
