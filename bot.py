@@ -18,11 +18,7 @@ DB_FILE = "posted_rooms.db"
 
 NICHES = {
     "bbw": ["bbw"],
-    "milf": ["milf"],
-    "asian": ["asian"],
-    "latina": ["latina"],
-    "ebony": ["ebony"],
-    "couple": ["couple"]
+    
 }
 
 HASHTAGS = ["LiveCams", "Chaturbate", "nsfw", "bskynsfw"]
