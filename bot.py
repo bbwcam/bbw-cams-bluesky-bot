@@ -6,10 +6,6 @@ import requests
 from datetime import datetime, timedelta
 from atproto import Client, client_utils
 
-# ======================
-# CONFIG
-# ======================
-
 API_URL = "https://chaturbate.com/api/public/affiliates/onlinerooms/?wm=T2CSW&client_ip=request_ip"
 
 BLUESKY_HANDLE = os.getenv("BLUESKY_HANDLE")
@@ -18,19 +14,34 @@ BLUESKY_PASS = os.getenv("BLUESKY_PASSWORD")
 DB_FILE = "posted_rooms.db"
 
 THREAD_SIZE = 3
-MAX_VIEWERS_CACHE = 50
+MAX_VIEWERS = 100
 
-# BBW niche tags
-BBW_TAGS = ["bbw", "chubby", "thick", "curvy"]
+# ======================
+# BBW TAG FILTER
+# ======================
 
-HASHTAGS = [
-    "BBW",
-    "BBWCam",
-    "CurvyGirls",
-    "ThickGirls",
-    "LiveCams",
-    "Chaturbate",
-    "NSFW"
+BBW_TAGS = [
+    "bbw","curvy","thick","chubby","bigass",
+    "plussize","voluptuous","bigboobs","bigbooty"
+]
+
+# ======================
+# LARGE HASHTAG POOL
+# ======================
+
+HASHTAG_POOL = [
+
+"BBW","CurvyGirls","ThickGirls","Chubby",
+"BBWCam","BBWLive","CurvyCam","ThickCam",
+"PlusSize","BigBeautifulWomen",
+"BigBooty","BigBoobs",
+"LiveCams","Chaturbate",
+"CamGirls","NSFW",
+"CamModel","AdultTwitter",
+"WebcamGirls","CamShow",
+"LiveAdult","AdultContent",
+"CamStreaming","OnlineModels"
+
 ]
 
 logging.basicConfig(level=logging.INFO)
@@ -40,6 +51,7 @@ logging.basicConfig(level=logging.INFO)
 # ======================
 
 def init_db():
+
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
 
@@ -52,7 +64,6 @@ def init_db():
 
     conn.commit()
     conn.close()
-
 
 def already_posted(username):
 
@@ -71,7 +82,6 @@ def already_posted(username):
 
     return datetime.now() - last < timedelta(days=30)
 
-
 def save_post(username):
 
     conn = sqlite3.connect(DB_FILE)
@@ -82,7 +92,6 @@ def save_post(username):
 
     conn.commit()
     conn.close()
-
 
 # ======================
 # FETCH ROOMS
@@ -104,9 +113,8 @@ def fetch_rooms():
 
     return rooms
 
-
 # ======================
-# FILTER BBW
+# FILTER BBW ROOMS
 # ======================
 
 def filter_bbw(rooms):
@@ -130,10 +138,9 @@ def filter_bbw(rooms):
 
         results.append(r)
 
-    results.sort(key=lambda x: int(x.get("num_users", 0)), reverse=True)
+    results.sort(key=lambda x: int(x.get("num_users",0)), reverse=True)
 
     return results
-
 
 # ======================
 # BUILD POST
@@ -143,7 +150,7 @@ def build_post(room):
 
     username = room["username"]
 
-    subject = room.get("room_subject", "")
+    subject = room.get("room_subject","")
 
     if len(subject) > 80:
         subject = subject[:80] + "..."
@@ -159,19 +166,20 @@ def build_post(room):
     builder.text(f"{subject}\n\n")
 
     builder.text("👉 Watch free: ")
-    builder.link(url, url)
+    builder.link(url,url)
 
     builder.text("\n\n")
 
-    for i, tag in enumerate(HASHTAGS):
+    tags = random.sample(HASHTAG_POOL,5)
 
-        if i > 0:
+    for i,tag in enumerate(tags):
+
+        if i>0:
             builder.text(" ")
 
-        builder.tag(f"#{tag}", tag)
+        builder.tag(f"#{tag}",tag)
 
     return builder
-
 
 # ======================
 # POST THREAD
@@ -179,7 +187,6 @@ def build_post(room):
 
 def post_thread(client, rooms):
 
-    root_post = None
     parent = None
 
     for room in rooms:
@@ -196,15 +203,11 @@ def post_thread(client, rooms):
             reply_to=parent
         )
 
-        if root_post is None:
-            root_post = post
-
         parent = post
 
         save_post(room["username"])
 
         logging.info(f"Posted {room['username']}")
-
 
 # ======================
 # RUN BOT
@@ -228,10 +231,9 @@ def run_bot():
 
         return
 
-    selected = random.sample(bbw_rooms[:MAX_VIEWERS_CACHE], THREAD_SIZE)
+    selected = random.sample(bbw_rooms[:MAX_VIEWERS], THREAD_SIZE)
 
     post_thread(client, selected)
-
 
 # ======================
 # MAIN
